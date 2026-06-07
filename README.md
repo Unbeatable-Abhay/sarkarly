@@ -84,7 +84,7 @@ The server will start at `http://localhost:5000`
 
 | Route | Method | Description |
 |---|---|---|
-| `/scheme-match` | POST | Returns schemes matching the user's profile |
+| `/home` | POST | Returns schemes matching the user's profile |
 | `/legal-advisor` | POST | Returns relevant laws for a described situation |
 | `/scheme-directory` | POST | Returns all schemes with application guidance |
 
