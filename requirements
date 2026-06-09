@@ -1,4 +1,9 @@
 flask
 flask-cors
 python-dotenv
-google-generativeai
+langchain-groq
+langchain-tavily
+langgraph
+langchain
+langchain-google-genai
+google-genai
