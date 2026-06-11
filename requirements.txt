@@ -7,3 +7,4 @@ langgraph
 langchain
 langchain-google-genai
 google-genai
+gunicorn
