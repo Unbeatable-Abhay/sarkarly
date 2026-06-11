@@ -41,6 +41,10 @@ agent_scheme=create_agent(llm, tools=tools, system_prompt=scheme_system_prompt)
 agent_legal=create_agent(llm, tools=tools, system_prompt=legal_system_prompt)
 agent_directory=create_agent(llm, tools=tools, system_prompt=directory_system_prompt)
 
+@app.route('/')
+def home():
+    return "Backend is awake!", 200
+
 @app.route('/scheme_match', methods=['POST'])
 def scheme_match():
     data=request.json
