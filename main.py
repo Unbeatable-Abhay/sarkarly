@@ -19,6 +19,12 @@ groq_llm = ChatOpenAI(
     max_retries=0
 )
 
+groq_llm_8b = ChatOpenAI(
+    model="llama-3.1-8b-instant",
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1",
+    max_retries=0
+)
 
 cerebras_llm = ChatOpenAI(
     model="gpt-oss-120b",
@@ -27,7 +33,7 @@ cerebras_llm = ChatOpenAI(
     max_retries=0
 )
 
-search_tool = TavilySearch(max_results=5)
+search_tool = TavilySearch(max_results=3)
 tools = [search_tool]
 
 scheme_system_prompt = """You are a helpful assistant that helps Indian citizens find government schemes and their legal rights.
