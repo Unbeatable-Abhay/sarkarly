@@ -1,7 +1,7 @@
 import os
 from flask_cors import CORS
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from flask import Flask, request, jsonify
 from langchain_tavily import TavilySearch
 from langchain.agents import create_agent
@@ -11,7 +11,19 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
+groq_llm = ChatOpenAI(
+    model="llama-3.3-70b-versatile",
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1"
+)
+
+cerebras_llm = ChatOpenAI(
+    model="llama-3.3-70b",
+    api_key=os.getenv("CEREBRAS_API_KEY"),
+    base_url="https://api.cerebras.ai/v1"
+)
+
+llm = groq_llm.with_fallbacks([cerebras_llm])
 search_tool=TavilySearch(max_results=5)
 tools=[search_tool]
 
