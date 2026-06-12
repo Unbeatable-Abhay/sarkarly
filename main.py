@@ -18,7 +18,7 @@ groq_llm = ChatOpenAI(
 )
 
 cerebras_llm = ChatOpenAI(
-    model="llama-3.3-70b",
+    model="llama3.3-70b",
     api_key=os.getenv("CEREBRAS_API_KEY"),
     base_url="https://api.cerebras.ai/v1"
 )
