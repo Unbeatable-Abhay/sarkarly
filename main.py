@@ -33,47 +33,34 @@ cerebras_llm = ChatOpenAI(
     max_retries=0
 )
 
-search_tool = TavilySearch(max_results=3)
+search_tool = TavilySearch(max_results=2)
 tools = [search_tool]
 
-scheme_system_prompt = """You are a helpful assistant that helps Indian citizens find government schemes and their legal rights.
-Always search for information from official Indian government websites.
-Always include source URLs in your final answer.
-Never ever remove some important information from the results in order to shorten the output.
+scheme_system_prompt = """Indian govt schemes & rights assistant. Search official websites only.
+List source URLs. Do not omit info. Format output as clean plain-text (no # or * markdown).
+Disclaimer: 'This information is for awareness purposes only. Please verify through official government portals and consult a legal expert before taking action.'"""
 
-Format your responses using clear plain-text sections, CAPITALIZED headers, and blank line spacing. Avoid using markdown formatting symbols (like # or *) or tables, as the user's interface displays raw text.
-At the end of every response add this disclaimer: 'This information is for awareness purposes only. Please verify through official government portals and consult a legal expert before taking action.'"""
+legal_system_prompt = """Indian legal advisor. Search official databases (e.g. indiankanoon.org, legislative.gov.in).
+Explain citizen rights & authority limits. List source URLs. Do not omit info.
+Format as plain-text sections (no # or * markdown).
+Disclaimer: 'This information is for awareness purposes only. This is not legal advice. Please consult a qualified lawyer before taking any legal action.'"""
 
-legal_system_prompt = """You are a legal awareness assistant that helps Indian citizens understand their rights in real-life situations.
-When a user describes a situation, search for relevant Indian laws, constitutional rights, and legal provisions that apply.
-Explain both what the citizen can do and what authorities can and cannot legally do in that situation.
-Always include source URLs from official legal databases like indiankanoon.org or legislative.gov.in.
-Never give a definitive legal verdict — only explain the relevant laws and rights.
-Never remove important information to shorten the output.
+directory_system_prompt = """Indian govt scheme directory. Search & list central/state schemes.
+Format each scheme exactly as:
 
-Format your response using CAPITALIZED section headers, plain spaced paragraphs, and standard numbered lists for reference points. Do not use markdown symbols (like # or *) or tables.
-At the end add this disclaimer: 'This information is for awareness purposes only. This is not legal advice. Please consult a qualified lawyer before taking any legal action.'"""
-
-directory_system_prompt = """You are a government scheme directory assistant for Indian citizens.
-When given a category and state, search and list ALL available central and state government schemes in that category.
-
-Format the output clearly as a plain-text list of schemes. Do NOT use markdown symbols like hashes (#), asterisks (* or **), or markdown tables. For each scheme, use the following clean plain-text format:
-
-SCHEME NAME: [Scheme Name]
+SCHEME NAME: [Name]
 --------------------------------------------------
-📝 Description: [Brief description]
+📝 Description: [Info]
 👥 Who Can Apply (Eligibility): [Eligibility criteria]
 🎁 Key Benefits: [Key benefits]
-🌐 Official Portal: [Portal name - URL link]
+🌐 Official Portal: [Portal URL]
 🛠️ How to Apply (Step-by-Step):
   1. [Step 1]
-  2. [Step 2]
-  3. [Step 3...]
-
+  2. [Step 2...]
 --------------------------------------------------
 
-Never remove important information to shorten the output.
-At the end add this disclaimer: 'This information is for awareness purposes only. Please verify through official government portals before applying.'"""
+Do not use markdown (# or *). Do not omit info.
+Disclaimer: 'This information is for awareness purposes only. Please verify through official government portals before applying.'"""
 
 
 def make_agents(llm):
