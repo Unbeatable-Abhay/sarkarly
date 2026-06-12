@@ -70,7 +70,8 @@ def scheme_match():
             last_message = response['messages'][-1].content
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
-        except Exception:
+        except Exception as e:
+            print("Error: ",e)
             continue
 
     return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
@@ -87,7 +88,8 @@ def legal_advisory():
             last_message = response['messages'][-1].content
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
-        except Exception:
+        except Exception as e:
+            print("Error: ",e)
             continue
 
     return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
@@ -104,7 +106,8 @@ def scheme_directory():
             last_message = response['messages'][-1].content
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
-        except Exception:
+        except Exception as e:
+            print("Error: ",e)
             continue
 
     return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
