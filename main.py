@@ -5,6 +5,7 @@ from langchain_openai import ChatOpenAI
 from flask import Flask, request, jsonify
 from langchain_tavily import TavilySearch
 from langchain.agents import create_agent
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
@@ -18,6 +19,14 @@ groq_llm = ChatOpenAI(
     base_url="https://api.groq.com/openai/v1",
     max_retries=0
 )
+
+gemini_llm = None
+if os.getenv("GEMINI_API_KEY"):
+    gemini_llm = ChatGoogleGenerativeAI(
+        model="gemini-1.5-flash",
+        google_api_key=os.getenv("GEMINI_API_KEY"),
+        max_retries=0
+    )
 
 groq_llm_8b = ChatOpenAI(
     model="llama-3.1-8b-instant",
@@ -33,7 +42,7 @@ cerebras_llm = ChatOpenAI(
     max_retries=0
 )
 
-search_tool = TavilySearch(max_results=2)
+search_tool = TavilySearch(max_results=1)
 tools = [search_tool]
 
 scheme_system_prompt = """Indian govt schemes & rights assistant. Search official websites only.
