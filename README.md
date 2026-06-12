@@ -35,7 +35,7 @@ Browse all available central and state government schemes in one place. Select a
 | Backend | Flask (Python) |
 | AI Agent | LangChain |
 | Web Search | Tavily API |
-| Language Model | Groq/Cerebras |
+| Language Model | LLaMA 3.3 70B via Groq (primary) with Cerebras fallback |
 
 ---
 
@@ -46,7 +46,7 @@ gov_awareness/
 ├── main.py           # Flask backend with API routes
 ├── .env.example      # Environment variable template
 ├── .gitignore
-└── requirements      # Python dependencies
+└── requirements.txt  # Python dependencies
 ```
 
 ---
@@ -68,8 +68,14 @@ pip install -r requirements.txt
 
 Copy `.env.example` to `.env` and fill in your API keys:
 ```
-GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+CEREBRAS_API_KEY=your_cerebras_api_key
+TAVILY_API_KEY=your_tavily_api_key
 ```
+
+- Get Groq API key: https://console.groq.com
+- Get Cerebras API key: https://cloud.cerebras.ai
+- Get Tavily API key: https://app.tavily.com
 
 **4. Run the backend**
 ```bash
@@ -84,9 +90,15 @@ The server will start at `http://localhost:5000`
 
 | Route | Method | Description |
 |---|---|---|
-| `/home` | POST | Returns schemes matching the user's profile |
-| `/legal-advisor` | POST | Returns relevant laws for a described situation |
-| `/scheme-directory` | POST | Returns all schemes with application guidance |
+| `/scheme_match` | POST | Returns schemes matching the user's profile |
+| `/legal_advisory` | POST | Returns relevant laws for a described situation |
+| `/scheme_directory` | POST | Returns all schemes with application guidance |
+
+---
+
+## LLM Fallback
+
+The app uses **Groq** as the primary LLM provider. If Groq's daily token limit is reached, requests automatically fall back to **Cerebras** — both running LLaMA 3.3 70B. This ensures the app stays available even when one provider's free tier is exhausted.
 
 ---
 
