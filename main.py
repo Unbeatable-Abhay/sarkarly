@@ -15,14 +15,16 @@ CORS(app)
 groq_llm = ChatOpenAI(
     model="llama-3.3-70b-versatile",
     api_key=os.getenv("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1"
+    base_url="https://api.groq.com/openai/v1",
+    max_retries=0
 )
 
 
 cerebras_llm = ChatOpenAI(
     model="gpt-oss-120b",
     api_key=os.getenv("CEREBRAS_API_KEY"),
-    base_url="https://api.cerebras.ai/v1"
+    base_url="https://api.cerebras.ai/v1",
+    max_retries=0
 )
 
 search_tool = TavilySearch(max_results=5)
