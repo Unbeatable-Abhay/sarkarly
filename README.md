@@ -35,7 +35,7 @@ Browse all available central and state government schemes in one place. Select a
 | Backend | Flask (Python) |
 | AI Agent | LangChain |
 | Web Search | Tavily API |
-| Language Model | Gemini 2.5 Flash |
+| Language Model | Groq/Cerebras |
 
 ---
 
