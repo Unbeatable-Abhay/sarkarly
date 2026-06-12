@@ -8,3 +8,4 @@ langchain
 langchain-google-genai
 google-genai
 gunicorn
+langchain-openai
