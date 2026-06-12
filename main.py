@@ -11,14 +11,16 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+
 groq_llm = ChatOpenAI(
     model="llama-3.3-70b-versatile",
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
 )
 
+
 cerebras_llm = ChatOpenAI(
-    model="llama3.3-70b",
+    model="gpt-oss-120b",
     api_key=os.getenv("CEREBRAS_API_KEY"),
     base_url="https://api.cerebras.ai/v1"
 )
@@ -61,7 +63,9 @@ def home():
 @app.route('/scheme_match', methods=['POST'])
 def scheme_match():
     data = request.json
-    user_query = data['query']
+    user_query = data.get('query')
+    if not user_query:
+        return jsonify({'error': 'Missing query parameter'}), 400
 
     for llm in [groq_llm, cerebras_llm]:
         try:
@@ -71,7 +75,7 @@ def scheme_match():
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
         except Exception as e:
-            print("Error: ",e)
+            print(f"Error using model {llm.model_name}: {e}")
             continue
 
     return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
@@ -79,7 +83,9 @@ def scheme_match():
 @app.route("/legal_advisory", methods=['POST'])
 def legal_advisory():
     data = request.json
-    user_query = data['query']
+    user_query = data.get('query')
+    if not user_query:
+        return jsonify({'error': 'Missing query parameter'}), 400
 
     for llm in [groq_llm, cerebras_llm]:
         try:
@@ -89,7 +95,7 @@ def legal_advisory():
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
         except Exception as e:
-            print("Error: ",e)
+            print(f"Error using model {llm.model_name}: {e}")
             continue
 
     return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
@@ -97,7 +103,9 @@ def legal_advisory():
 @app.route("/scheme_directory", methods=['POST'])
 def scheme_directory():
     data = request.json
-    user_query = data['query']
+    user_query = data.get('query')
+    if not user_query:
+        return jsonify({'error': 'Missing query parameter'}), 400
 
     for llm in [groq_llm, cerebras_llm]:
         try:
@@ -107,7 +115,7 @@ def scheme_directory():
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
         except Exception as e:
-            print("Error: ",e)
+            print(f"Error using model {llm.model_name}: {e}")
             continue
 
     return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
