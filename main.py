@@ -2,17 +2,18 @@ import os
 from flask_cors import CORS
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from flask import Flask, request, jsonify
 from langchain_tavily import TavilySearch
 from langchain.agents import create_agent
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.tools import tool
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-
+# Groq LLM (Primary - 70B)
 groq_llm = ChatOpenAI(
     model="llama-3.3-70b-versatile",
     api_key=os.getenv("GROQ_API_KEY"),
@@ -20,14 +21,7 @@ groq_llm = ChatOpenAI(
     max_retries=0
 )
 
-gemini_llm = None
-if os.getenv("GEMINI_API_KEY"):
-    gemini_llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        google_api_key=os.getenv("GEMINI_API_KEY"),
-        max_retries=0
-    )
-
+# Groq LLM (Secondary - 8B Instant)
 groq_llm_8b = ChatOpenAI(
     model="llama-3.1-8b-instant",
     api_key=os.getenv("GROQ_API_KEY"),
@@ -35,6 +29,17 @@ groq_llm_8b = ChatOpenAI(
     max_retries=0
 )
 
+# Gemini LLM (Backup)
+gemini_llm = None
+if os.getenv("GEMINI_API_KEY"):
+    gemini_llm = ChatGoogleGenerativeAI(
+        model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        google_api_key=os.getenv("GEMINI_API_KEY"),
+        max_retries=0
+    )
+
+# Cerebras LLM (Fallback)
+# Note: Cerebras has deprecated 'llama-3.3-70b'/'llama3.3-70b' and now uses 'gpt-oss-120b'
 cerebras_llm = ChatOpenAI(
     model="gpt-oss-120b",
     api_key=os.getenv("CEREBRAS_API_KEY"),
@@ -43,7 +48,13 @@ cerebras_llm = ChatOpenAI(
 )
 
 search_tool = TavilySearch(max_results=1)
-tools = [search_tool]
+
+@tool
+def web_search(query: str) -> str:
+    """Search the web for official Indian government schemes, portals, laws, and citizen rights."""
+    return search_tool.run(query)
+
+tools = [web_search]
 
 scheme_system_prompt = """Indian govt schemes & rights assistant. Search official websites only.
 List source URLs. Do not omit info. Format output as clean plain-text (no # or * markdown).
@@ -78,14 +89,12 @@ def make_agents(llm):
     agent_directory = create_agent(llm, tools=tools, system_prompt=directory_system_prompt)
     return agent_scheme, agent_legal, agent_directory
 
-
 def get_models_chain():
     chain = [groq_llm, groq_llm_8b]
     if gemini_llm:
         chain.append(gemini_llm)
     chain.append(cerebras_llm)
-    return [model for model in chain if model is not None]
-
+    return chain
 
 @app.route('/')
 def home():
@@ -106,10 +115,11 @@ def scheme_match():
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
         except Exception as e:
-            print(f"Error using model {llm.model_name}: {e}")
+            model_name = getattr(llm, 'model_name', getattr(llm, 'model', 'unknown'))
+            print(f"Error using model {model_name}: {e}")
             continue
 
-    return jsonify({'error': 'All models are unavailable, try again later.'}), 503
+    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
 
 @app.route("/legal_advisory", methods=['POST'])
 def legal_advisory():
@@ -126,10 +136,11 @@ def legal_advisory():
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
         except Exception as e:
-            print(f"Error using model {llm.model_name}: {e}")
+            model_name = getattr(llm, 'model_name', getattr(llm, 'model', 'unknown'))
+            print(f"Error using model {model_name}: {e}")
             continue
 
-    return jsonify({'error': 'All models are unavailable, try again later.'}), 503
+    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
 
 @app.route("/scheme_directory", methods=['POST'])
 def scheme_directory():
@@ -146,10 +157,11 @@ def scheme_directory():
             answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
             return jsonify({'Answer': answer})
         except Exception as e:
-            print(f"Error using model {llm.model_name}: {e}")
+            model_name = getattr(llm, 'model_name', getattr(llm, 'model', 'unknown'))
+            print(f"Error using model {model_name}: {e}")
             continue
 
-    return jsonify({'error': 'All models are unavailable, try again later.'}), 503
+    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
 
 if __name__ == '__main__':
     app.run(debug=True)
