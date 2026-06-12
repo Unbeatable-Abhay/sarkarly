@@ -23,16 +23,14 @@ cerebras_llm = ChatOpenAI(
     base_url="https://api.cerebras.ai/v1"
 )
 
-llm = groq_llm.with_fallbacks([cerebras_llm])
-search_tool=TavilySearch(max_results=5)
-tools=[search_tool]
+search_tool = TavilySearch(max_results=5)
+tools = [search_tool]
 
 scheme_system_prompt = """You are a helpful assistant that helps Indian citizens find government schemes and their legal rights.
 Always search for information from official Indian government websites.
 Always include source URLs in your final answer.
 Never ever remove some important information from the results in order to shorten the output.
 At the end of every response add this disclaimer: 'This information is for awareness purposes only. Please verify through official government portals and consult a legal expert before taking action.'"""
-
 
 legal_system_prompt = """You are a legal awareness assistant that helps Indian citizens understand their rights in real-life situations.
 When a user describes a situation, search for relevant Indian laws, constitutional rights, and legal provisions that apply.
@@ -49,9 +47,12 @@ Always include official portal links for each scheme.
 Never remove important information to shorten the output.
 At the end add this disclaimer: 'This information is for awareness purposes only. Please verify through official government portals before applying.'"""
 
-agent_scheme=create_agent(llm, tools=tools, system_prompt=scheme_system_prompt)
-agent_legal=create_agent(llm, tools=tools, system_prompt=legal_system_prompt)
-agent_directory=create_agent(llm, tools=tools, system_prompt=directory_system_prompt)
+
+def make_agents(llm):
+    agent_scheme = create_agent(llm, tools=tools, system_prompt=scheme_system_prompt)
+    agent_legal = create_agent(llm, tools=tools, system_prompt=legal_system_prompt)
+    agent_directory = create_agent(llm, tools=tools, system_prompt=directory_system_prompt)
+    return agent_scheme, agent_legal, agent_directory
 
 @app.route('/')
 def home():
@@ -59,50 +60,54 @@ def home():
 
 @app.route('/scheme_match', methods=['POST'])
 def scheme_match():
-    data=request.json
-    user_query=data['query']
+    data = request.json
+    user_query = data['query']
 
-    response=agent_scheme.invoke({"messages": [{"role": "user", "content": user_query}]})
+    for llm in [groq_llm, cerebras_llm]:
+        try:
+            agent_scheme, _, _ = make_agents(llm)
+            response = agent_scheme.invoke({"messages": [{"role": "user", "content": user_query}]})
+            last_message = response['messages'][-1].content
+            answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
+            return jsonify({'Answer': answer})
+        except Exception:
+            continue
 
-    last_message=response['messages'][-1].content
-
-    if isinstance(last_message, list):
-        answer=last_message[-1]['text']
-    else:
-        answer=last_message
-
-    return jsonify({'Answer': answer})
+    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
 
 @app.route("/legal_advisory", methods=['POST'])
 def legal_advisory():
-    data=request.json
-    user_query=data['query']
+    data = request.json
+    user_query = data['query']
 
-    response=agent_legal.invoke({"messages": [{"role": "user", "content": user_query}]})
+    for llm in [groq_llm, cerebras_llm]:
+        try:
+            _, agent_legal, _ = make_agents(llm)
+            response = agent_legal.invoke({"messages": [{"role": "user", "content": user_query}]})
+            last_message = response['messages'][-1].content
+            answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
+            return jsonify({'Answer': answer})
+        except Exception:
+            continue
 
-    last_message=response['messages'][-1].content
-    if isinstance(last_message, list):
-        answer=last_message[-1]['text']
-    else:
-        answer=last_message
-
-    return jsonify({'Answer': answer})
+    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
 
 @app.route("/scheme_directory", methods=['POST'])
 def scheme_directory():
-    data=request.json
-    user_query=data['query']
+    data = request.json
+    user_query = data['query']
 
-    response=agent_directory.invoke({"messages": [{"role": "user", "content": user_query}]})
+    for llm in [groq_llm, cerebras_llm]:
+        try:
+            _, _, agent_directory = make_agents(llm)
+            response = agent_directory.invoke({"messages": [{"role": "user", "content": user_query}]})
+            last_message = response['messages'][-1].content
+            answer = last_message[-1]['text'] if isinstance(last_message, list) else last_message
+            return jsonify({'Answer': answer})
+        except Exception:
+            continue
 
-    last_message=response['messages'][-1].content
-    if isinstance(last_message, list):
-        answer=last_message[-1]['text']
-    else:
-        answer=last_message
-
-    return jsonify({'Answer': answer})
-
+    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
 
 if __name__ == '__main__':
     app.run(debug=True)
