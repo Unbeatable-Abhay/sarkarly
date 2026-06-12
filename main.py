@@ -48,6 +48,7 @@ search_tool = TavilySearch(max_results=3)
 
 @tool
 def web_search(query: str) -> str:
+    """Search the web for Indian Government information."""
     return search_tool.run(query)
 
 tools = [web_search]
