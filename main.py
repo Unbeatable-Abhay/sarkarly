@@ -78,6 +78,15 @@ def make_agents(llm):
     agent_directory = create_agent(llm, tools=tools, system_prompt=directory_system_prompt)
     return agent_scheme, agent_legal, agent_directory
 
+
+def get_models_chain():
+    chain = [groq_llm, groq_llm_8b]
+    if gemini_llm:
+        chain.append(gemini_llm)
+    chain.append(cerebras_llm)
+    return [model for model in chain if model is not None]
+
+
 @app.route('/')
 def home():
     return "Backend is awake!", 200
@@ -89,7 +98,7 @@ def scheme_match():
     if not user_query:
         return jsonify({'error': 'Missing query parameter'}), 400
 
-    for llm in [groq_llm, cerebras_llm]:
+    for llm in get_models_chain():
         try:
             agent_scheme, _, _ = make_agents(llm)
             response = agent_scheme.invoke({"messages": [{"role": "user", "content": user_query}]})
@@ -100,7 +109,7 @@ def scheme_match():
             print(f"Error using model {llm.model_name}: {e}")
             continue
 
-    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
+    return jsonify({'error': 'All models are unavailable, try again later.'}), 503
 
 @app.route("/legal_advisory", methods=['POST'])
 def legal_advisory():
@@ -109,7 +118,7 @@ def legal_advisory():
     if not user_query:
         return jsonify({'error': 'Missing query parameter'}), 400
 
-    for llm in [groq_llm, cerebras_llm]:
+    for llm in get_models_chain():
         try:
             _, agent_legal, _ = make_agents(llm)
             response = agent_legal.invoke({"messages": [{"role": "user", "content": user_query}]})
@@ -120,7 +129,7 @@ def legal_advisory():
             print(f"Error using model {llm.model_name}: {e}")
             continue
 
-    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
+    return jsonify({'error': 'All models are unavailable, try again later.'}), 503
 
 @app.route("/scheme_directory", methods=['POST'])
 def scheme_directory():
@@ -129,7 +138,7 @@ def scheme_directory():
     if not user_query:
         return jsonify({'error': 'Missing query parameter'}), 400
 
-    for llm in [groq_llm, cerebras_llm]:
+    for llm in get_models_chain():
         try:
             _, _, agent_directory = make_agents(llm)
             response = agent_directory.invoke({"messages": [{"role": "user", "content": user_query}]})
@@ -140,7 +149,7 @@ def scheme_directory():
             print(f"Error using model {llm.model_name}: {e}")
             continue
 
-    return jsonify({'error': 'Both models are unavailable, try again later.'}), 503
+    return jsonify({'error': 'All models are unavailable, try again later.'}), 503
 
 if __name__ == '__main__':
     app.run(debug=True)
