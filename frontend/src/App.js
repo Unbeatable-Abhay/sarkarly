@@ -45,6 +45,15 @@ const LAND_OPTIONS = ["None", "Less than 2 acres", "2-5 acres", "5+ acres"]
 
 const DIRECTORY_CATEGORIES = ["Agriculture", "Education", "Women", "Health", "Housing", "Employment", "Business"]
 
+// Purely visual landing grid. Picking a card just jumps to the directory
+// tab and pre-fills the category - no new backend routes involved.
+const LANDING_CATEGORIES = [
+  { id: "Housing", label: "Housing", icon: "🏠" },
+  { id: "Education", label: "Education", icon: "🎓" },
+  { id: "Health", label: "Health", icon: "🩺" },
+  { id: "Agriculture", label: "Agriculture", icon: "🌾" },
+]
+
 const DISCLAIMER =
   "This information is for awareness purposes only. Please verify through official government portals and consult a legal expert before taking action."
 
@@ -131,6 +140,33 @@ function ResponseCard({ loading, error, answer }) {
   )
 }
 
+// Static landing section shown above the tabs. Clicking a category card
+// jumps straight to the directory tab with that category pre-selected.
+function CategoryLanding({ onPickCategory }) {
+  return (
+    <section className="landing" aria-label="Browse by category">
+      <div className="landing-stat">
+        <p className="landing-stat-label">Schemes covered</p>
+        <p className="landing-stat-value">7 categories</p>
+        <p className="landing-stat-sub">Searched live from official government portals</p>
+      </div>
+
+      <p className="landing-label">Browse by category</p>
+      <div className="category-grid">
+        {LANDING_CATEGORIES.map((c) => (
+          <button key={c.id} className="category-card" onClick={() => onPickCategory(c.id)}>
+            <span className="category-icon" aria-hidden="true">
+              {c.icon}
+            </span>
+            <p className="category-name">{c.label}</p>
+            <p className="category-sub">View schemes</p>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("matcher")
 
@@ -203,6 +239,13 @@ export default function App() {
     setLoading(false)
   }
 
+  // Used by the category landing cards - jumps to directory tab
+  // with that category already chosen.
+  function handlePickCategory(categoryId) {
+    setDirCategory(categoryId)
+    switchTab("directory")
+  }
+
   const tabs = [
     { id: "matcher", label: "Scheme Matcher" },
     { id: "legal", label: "Legal Advisor" },
@@ -224,6 +267,8 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      <CategoryLanding onPickCategory={handlePickCategory} />
 
       <nav className="tabs" role="tablist" aria-label="Sections">
         {tabs.map((tab) => (
