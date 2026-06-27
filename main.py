@@ -8,6 +8,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+
 def get_llms():
     from langchain_openai import ChatOpenAI
     from langchain_google_genai import ChatGoogleGenerativeAI
@@ -94,7 +95,7 @@ You are an Indian government scheme directory assistant.
 Format EXACTLY like this:
 
 SCHEME NAME: [Name]
---------------------------------------------------
+-----------------------------------------
 Description: [Info]
 
 Who Can Apply:
@@ -105,11 +106,13 @@ Benefits:
 
 Official Portal:
 [URL]
+make sure to make this link clickable so and not just paste it as a text
 
 How to Apply:
 1. Step 1
 2. Step 2
---------------------------------------------------
+and so on.... and after all the "How to apply" steps make sure to add the the actual working form url for that scheme
+-----------------------------------------
 
 Rules:
 - Output clean plain text only.
@@ -120,6 +123,7 @@ Disclaimer:
 This information is for awareness purposes only.
 Please verify through official government portals before applying.
 """
+
 
 def make_agents(llm, tools):
     from langchain.agents import create_agent
@@ -144,8 +148,8 @@ def make_agents(llm, tools):
 
     return agent_scheme, agent_legal, agent_directory
 
-def extract_final_answer(response):
 
+def extract_final_answer(response):
     messages = response.get("messages", [])
 
     for msg in reversed(messages):
@@ -183,6 +187,7 @@ def extract_final_answer(response):
                 return final_text
 
     return "Unable to generate a proper response."
+
 
 def handle_request(agent_type, user_query):
     from langchain_core.tools import tool as lc_tool
@@ -254,13 +259,14 @@ def handle_request(agent_type, user_query):
         "error": "All AI models are currently unavailable."
     }), 503
 
+
 @app.route('/')
 def home():
     return "Backend is awake!", 200
 
+
 @app.route('/scheme_match', methods=['POST'])
 def scheme_match():
-
     data = request.json
     user_query = data.get('query')
 
@@ -271,9 +277,9 @@ def scheme_match():
 
     return handle_request("scheme", user_query)
 
+
 @app.route('/legal_advisory', methods=['POST'])
 def legal_advisory():
-
     data = request.json
     user_query = data.get('query')
 
@@ -284,9 +290,9 @@ def legal_advisory():
 
     return handle_request("legal", user_query)
 
+
 @app.route('/scheme_directory', methods=['POST'])
 def scheme_directory():
-
     data = request.json
     user_query = data.get('query')
 
@@ -296,6 +302,7 @@ def scheme_directory():
         }), 400
 
     return handle_request("directory", user_query)
+
 
 if __name__ == '__main__':
     app.run(host='localhost', port=8000, debug=True)
