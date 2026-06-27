@@ -3,55 +3,57 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_tavily import TavilySearch
-from langchain.agents import create_agent
-from langchain_core.tools import tool
-
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-groq_llm = ChatOpenAI(
-    model="llama-3.3-70b-versatile",
-    api_key=os.getenv("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1",
-    max_retries=0
-)
+def get_llms():
+    from langchain_openai import ChatOpenAI
+    from langchain_google_genai import ChatGoogleGenerativeAI
 
-groq_llm_8b = ChatOpenAI(
-    model="llama-3.1-8b-instant",
-    api_key=os.getenv("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1",
-    max_retries=0
-)
+    groq_key = os.getenv("GROQ_API_KEY")
+    cerebras_key = os.getenv("CEREBRAS_API_KEY")
+    gemini_key = os.getenv("GEMINI_API_KEY")
 
-gemini_llm = None
+    llms = []
 
-if os.getenv("GEMINI_API_KEY"):
-    gemini_llm = ChatGoogleGenerativeAI(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
-        google_api_key=os.getenv("GEMINI_API_KEY"),
-        max_retries=0
-    )
+    if groq_key:
+        llms.append(ChatOpenAI(
+            model="llama-3.3-70b-versatile",
+            api_key=groq_key,
+            base_url="https://api.groq.com/openai/v1",
+            max_retries=0
+        ))
+        llms.append(ChatOpenAI(
+            model="llama-3.1-8b-instant",
+            api_key=groq_key,
+            base_url="https://api.groq.com/openai/v1",
+            max_retries=0
+        ))
 
-cerebras_llm = ChatOpenAI(
-    model="gpt-oss-120b",
-    api_key=os.getenv("CEREBRAS_API_KEY"),
-    base_url="https://api.cerebras.ai/v1",
-    max_retries=0
-)
+    if gemini_key:
+        llms.append(ChatGoogleGenerativeAI(
+            model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+            google_api_key=gemini_key,
+            max_retries=0
+        ))
 
-search_tool = TavilySearch(max_results=3)
+    if cerebras_key:
+        llms.append(ChatOpenAI(
+            model="gpt-oss-120b",
+            api_key=cerebras_key,
+            base_url="https://api.cerebras.ai/v1",
+            max_retries=0
+        ))
 
-@tool
-def web_search(query: str) -> str:
-    """Search the web for Indian Government information."""
-    return search_tool.run(query)
+    return llms
 
-tools = [web_search]
+
+def get_search_tool():
+    from langchain_tavily import TavilySearch
+    return TavilySearch(max_results=3)
+
 
 scheme_system_prompt = """
 You are an Indian government schemes assistant.
@@ -119,7 +121,9 @@ This information is for awareness purposes only.
 Please verify through official government portals before applying.
 """
 
-def make_agents(llm):
+def make_agents(llm, tools):
+    from langchain.agents import create_agent
+
     agent_scheme = create_agent(
         llm,
         tools=tools,
@@ -139,16 +143,6 @@ def make_agents(llm):
     )
 
     return agent_scheme, agent_legal, agent_directory
-
-def get_models_chain():
-    chain = [groq_llm, groq_llm_8b]
-
-    if gemini_llm:
-        chain.append(gemini_llm)
-
-    chain.append(cerebras_llm)
-
-    return chain
 
 def extract_final_answer(response):
 
@@ -191,12 +185,28 @@ def extract_final_answer(response):
     return "Unable to generate a proper response."
 
 def handle_request(agent_type, user_query):
+    from langchain_core.tools import tool as lc_tool
 
-    for llm in get_models_chain():
+    search_tool = get_search_tool()
+
+    @lc_tool
+    def web_search(query: str) -> str:
+        """Search the web for Indian Government information."""
+        return search_tool.run(query)
+
+    tools = [web_search]
+    llms = get_llms()
+
+    if not llms:
+        return jsonify({
+            "error": "No AI models configured. Please set GROQ_API_KEY, GEMINI_API_KEY, or CEREBRAS_API_KEY."
+        }), 503
+
+    for llm in llms:
 
         try:
 
-            agent_scheme, agent_legal, agent_directory = make_agents(llm)
+            agent_scheme, agent_legal, agent_directory = make_agents(llm, tools)
 
             if agent_type == "scheme":
                 agent = agent_scheme
@@ -288,4 +298,4 @@ def scheme_directory():
     return handle_request("directory", user_query)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='localhost', port=8000, debug=True)

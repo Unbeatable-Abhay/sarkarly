@@ -1,190 +1,236 @@
 import { useState } from "react"
+import "./App.css"
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000"
 
-// Each tab maps to its own backend route.
 const TAB_ROUTES = {
   matcher: `${API_BASE}/scheme_match`,
   legal: `${API_BASE}/legal_advisory`,
   directory: `${API_BASE}/scheme_directory`,
 }
 
-const OCCUPATIONS = ["Farmer", "Student", "Daily Wage Worker", "Small Business Owner", "Senior Citizen", "Women"]
+const OCCUPATIONS = [
+  "Farmer", "Student", "Daily Wage Worker",
+  "Small Business Owner", "Senior Citizen", "Women",
+]
 
 const STATES = [
-  "Andhra Pradesh",
-  "Assam",
-  "Bihar",
-  "Chhattisgarh",
-  "Delhi",
-  "Goa",
-  "Gujarat",
-  "Haryana",
-  "Himachal Pradesh",
-  "Jharkhand",
-  "Karnataka",
-  "Kerala",
-  "Madhya Pradesh",
-  "Maharashtra",
-  "Manipur",
-  "Meghalaya",
-  "Odisha",
-  "Punjab",
-  "Rajasthan",
-  "Tamil Nadu",
-  "Telangana",
-  "Tripura",
-  "Uttar Pradesh",
-  "Uttarakhand",
-  "West Bengal",
+  "Andhra Pradesh", "Assam", "Bihar", "Chhattisgarh", "Delhi",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Odisha", "Punjab", "Rajasthan", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
 ]
 
 const MATCHER_CATEGORIES = ["General", "SC/ST", "OBC", "Women", "Minority"]
-
-const LAND_OPTIONS = ["None", "Less than 2 acres", "2-5 acres", "5+ acres"]
-
+const LAND_OPTIONS = ["None", "Less than 2 acres", "2–5 acres", "5+ acres"]
 const DIRECTORY_CATEGORIES = ["Agriculture", "Education", "Women", "Health", "Housing", "Employment", "Business"]
 
-// Purely visual landing grid. Picking a card just jumps to the directory
-// tab and pre-fills the category - no new backend routes involved.
-const LANDING_CATEGORIES = [
-  { id: "Housing", label: "Housing", icon: "🏠" },
-  { id: "Education", label: "Education", icon: "🎓" },
-  { id: "Health", label: "Health", icon: "🩺" },
-  { id: "Agriculture", label: "Agriculture", icon: "🌾" },
+const LANDING_CARDS = [
+  { id: "Housing",    label: "Housing",    icon: "🏠", color: "#E8F4FD" },
+  { id: "Education",  label: "Education",  icon: "🎓", color: "#EDF7ED" },
+  { id: "Health",     label: "Health",     icon: "🩺", color: "#FEF3F2" },
+  { id: "Agriculture",label: "Agriculture",icon: "🌾", color: "#FEF9E8" },
+  { id: "Employment", label: "Employment", icon: "💼", color: "#F3EFFE" },
+  { id: "Business",   label: "Business",   icon: "📊", color: "#E8F8F5" },
 ]
 
-const DISCLAIMER =
-  "This information is for awareness purposes only. Please verify through official government portals and consult a legal expert before taking action."
+const DISCLAIMER = "For awareness only. Verify through official government portals before applying."
 
-// Convert simple markdown-like text into HTML and extract source links as chips.
 function formatAnswer(text) {
   if (!text) return { html: "", links: [] }
-
-  // Collect URLs to render as clickable chips.
   const urlRegex = /(https?:\/\/[^\s)\]]+)/g
   const links = []
   const seen = {}
   let match
   while ((match = urlRegex.exec(text)) !== null) {
     let url = match[1].replace(/[.,;]+$/, "")
-    if (!seen[url]) {
-      seen[url] = true
-      links.push(url)
-    }
+    if (!seen[url]) { seen[url] = true; links.push(url) }
   }
-
   let html = text
-    // Escape HTML to avoid injection from the backend response.
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-
-  // Bold: **text** -> <strong>text</strong>
-  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-  // Newlines -> <br>
-  html = html.replace(/\n/g, "<br>")
-
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br>")
   return { html, links }
 }
 
 function Spinner() {
-  return <span className="spinner" aria-hidden="true" />
+  return (
+    <div className="spinner-wrap">
+      <div className="ios-spinner" />
+      <p className="spinner-label">Searching official portals…</p>
+    </div>
+  )
 }
 
 function ResponseCard({ loading, error, answer }) {
-  if (loading) {
-    return (
-      <div className="response-card loading-card" role="status" aria-live="polite">
-        <Spinner />
-        <p className="loading-text">Searching official government portals...</p>
-      </div>
-    )
-  }
-
+  if (loading) return <Spinner />
   if (error) {
     return (
-      <div className="response-card error-card" role="alert">
+      <div className="result-card result-error">
+        <span className="result-error-icon">⚠️</span>
         <p>Something went wrong. Please try again.</p>
       </div>
     )
   }
-
   if (!answer) return null
-
   const { html, links } = formatAnswer(answer)
-
   return (
-    <div className="response-card" aria-live="polite">
-      <h3 className="response-title">Result</h3>
-      <div className="response-body" dangerouslySetInnerHTML={{ __html: html }} />
-
+    <div className="result-card">
+      <div className="result-header">
+        <span className="result-dot" />
+        <span className="result-title">Result</span>
+      </div>
+      <div className="result-body" dangerouslySetInnerHTML={{ __html: html }} />
       {links.length > 0 && (
-        <div className="chips">
-          {links.map((url, i) => (
-            <a key={i} className="chip" href={url} target="_blank" rel="noopener noreferrer">
-              {(() => {
-                try {
-                  return new URL(url).hostname.replace("www.", "")
-                } catch {
-                  return "Source"
-                }
-              })()}
-            </a>
-          ))}
+        <div className="result-links">
+          <p className="result-links-label">Sources</p>
+          <div className="chips">
+            {links.map((url, i) => (
+              <a key={i} className="chip" href={url} target="_blank" rel="noopener noreferrer">
+                {(() => { try { return new URL(url).hostname.replace("www.", "") } catch { return "Source" } })()}
+              </a>
+            ))}
+          </div>
         </div>
       )}
-
       <p className="disclaimer">{DISCLAIMER}</p>
     </div>
   )
 }
 
-// Static landing section shown above the tabs. Clicking a category card
-// jumps straight to the directory tab with that category pre-selected.
-function CategoryLanding({ onPickCategory }) {
+function SelectField({ id, label, value, onChange, options, placeholder }) {
   return (
-    <section className="landing" aria-label="Browse by category">
-      <div className="landing-stat">
-        <p className="landing-stat-label">Schemes covered</p>
-        <p className="landing-stat-value">7 categories</p>
-        <p className="landing-stat-sub">Searched live from official government portals</p>
+    <div className="field">
+      <label className="field-label" htmlFor={id}>{label}</label>
+      <div className="select-wrap">
+        <select id={id} className="ios-select" value={value} onChange={e => onChange(e.target.value)}>
+          <option value="">{placeholder}</option>
+          {options.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+        <span className="select-arrow">›</span>
       </div>
+    </div>
+  )
+}
 
-      <p className="landing-label">Browse by category</p>
-      <div className="category-grid">
-        {LANDING_CATEGORIES.map((c) => (
-          <button key={c.id} className="category-card" onClick={() => onPickCategory(c.id)}>
-            <span className="category-icon" aria-hidden="true">
-              {c.icon}
-            </span>
-            <p className="category-name">{c.label}</p>
-            <p className="category-sub">View schemes</p>
-          </button>
-        ))}
+function MatcherTab({ loading, error, answer, onSubmit }) {
+  const [occupation, setOccupation] = useState("")
+  const [state, setState] = useState("")
+  const [category, setCategory] = useState("")
+  const [land, setLand] = useState("")
+  const [details, setDetails] = useState("")
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    const landPart = occupation === "Farmer" ? (land || "None") : "None"
+    const query = `I am a ${occupation || "citizen"} from ${state || "India"}, category ${category || "General"}, ${landPart} land. Additional info: ${details || "None"}`
+    onSubmit(query, TAB_ROUTES.matcher)
+  }
+
+  return (
+    <div className="tab-panel">
+      <div className="panel-header">
+        <h2 className="panel-title">Find Schemes For You</h2>
+        <p className="panel-subtitle">Tell us about yourself and we'll match you with relevant government schemes.</p>
       </div>
-    </section>
+      <form className="ios-form" onSubmit={handleSubmit}>
+        <div className="form-group">
+          <SelectField id="occupation" label="Occupation" value={occupation} onChange={setOccupation}
+            options={OCCUPATIONS} placeholder="Select occupation" />
+          <SelectField id="state" label="State" value={state} onChange={setState}
+            options={STATES} placeholder="Select state" />
+          <SelectField id="category" label="Category" value={category} onChange={setCategory}
+            options={MATCHER_CATEGORIES} placeholder="Select category" />
+          {occupation === "Farmer" && (
+            <SelectField id="land" label="Land Owned" value={land} onChange={setLand}
+              options={LAND_OPTIONS} placeholder="Select land owned" />
+          )}
+          <div className="field">
+            <label className="field-label" htmlFor="details">Additional Details <span className="field-optional">(optional)</span></label>
+            <textarea id="details" className="ios-textarea" rows={3}
+              placeholder="e.g. I have a disability, I am a widow, I run a dairy farm…"
+              value={details} onChange={e => setDetails(e.target.value)} />
+          </div>
+        </div>
+        <button type="submit" className="ios-btn" disabled={loading}>
+          {loading ? "Searching…" : "Find Matching Schemes"}
+        </button>
+      </form>
+      <ResponseCard loading={loading} error={error} answer={answer} />
+    </div>
+  )
+}
+
+function LegalTab({ loading, error, answer, onSubmit }) {
+  const [situation, setSituation] = useState("")
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    onSubmit(situation, TAB_ROUTES.legal)
+  }
+
+  return (
+    <div className="tab-panel">
+      <div className="panel-header">
+        <h2 className="panel-title">Know Your Rights</h2>
+        <p className="panel-subtitle">Describe your situation and learn what legal protections apply to you.</p>
+      </div>
+      <form className="ios-form" onSubmit={handleSubmit}>
+        <div className="form-group">
+          <div className="field">
+            <label className="field-label" htmlFor="situation">Describe your situation</label>
+            <textarea id="situation" className="ios-textarea" rows={5}
+              placeholder="e.g. A police officer stopped me while riding my bike and asked for documents…"
+              value={situation} onChange={e => setSituation(e.target.value)} required />
+          </div>
+        </div>
+        <button type="submit" className="ios-btn" disabled={loading || !situation.trim()}>
+          {loading ? "Searching…" : "Know My Rights"}
+        </button>
+      </form>
+      <ResponseCard loading={loading} error={error} answer={answer} />
+    </div>
+  )
+}
+
+function DirectoryTab({ loading, error, answer, onSubmit, initCategory }) {
+  const [category, setCategory] = useState(initCategory || "")
+  const [state, setState] = useState("")
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    const query = `List all ${category || "government"} government schemes available in ${state || "India"} with how to apply for each`
+    onSubmit(query, TAB_ROUTES.directory)
+  }
+
+  return (
+    <div className="tab-panel">
+      <div className="panel-header">
+        <h2 className="panel-title">Scheme Directory</h2>
+        <p className="panel-subtitle">Browse and explore schemes by category and state.</p>
+      </div>
+      <form className="ios-form" onSubmit={handleSubmit}>
+        <div className="form-group">
+          <SelectField id="dir-category" label="Category" value={category} onChange={setCategory}
+            options={DIRECTORY_CATEGORIES} placeholder="Select category" />
+          <SelectField id="dir-state" label="State" value={state} onChange={setState}
+            options={STATES} placeholder="All of India" />
+        </div>
+        <button type="submit" className="ios-btn" disabled={loading}>
+          {loading ? "Searching…" : "Browse Schemes"}
+        </button>
+      </form>
+      <ResponseCard loading={loading} error={error} answer={answer} />
+    </div>
   )
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("matcher")
-
-  // Scheme Matcher state
-  const [occupation, setOccupation] = useState("")
-  const [matcherState, setMatcherState] = useState("")
-  const [matcherCategory, setMatcherCategory] = useState("")
-  const [land, setLand] = useState("")
-  const [details, setDetails] = useState("")
-
-  // Legal Advisor state
-  const [situation, setSituation] = useState("")
-
-  // Scheme Directory state
-  const [dirCategory, setDirCategory] = useState("")
-  const [dirState, setDirState] = useState("")
-
-  // Shared request state
+  const [activeTab, setActiveTab] = useState("home")
+  const [directoryCategory, setDirectoryCategory] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [answer, setAnswer] = useState("")
@@ -203,33 +249,10 @@ export default function App() {
       const data = await res.json()
       setAnswer(data.Answer || "")
     } catch (err) {
-      console.log("[v0] Request error:", err.message)
       setError(true)
     } finally {
       setLoading(false)
     }
-  }
-
-  function handleMatcherSubmit(e) {
-    e.preventDefault()
-    const landPart = occupation === "Farmer" ? `${land || "None"}` : "None"
-    const query = `I am a ${occupation || "citizen"} from ${matcherState || "India"}, category ${
-      matcherCategory || "General"
-    }, ${landPart} land. Additional info: ${details || "None"}`
-    sendQuery(query, TAB_ROUTES.matcher)
-  }
-
-  function handleLegalSubmit(e) {
-    e.preventDefault()
-    sendQuery(situation, TAB_ROUTES.legal)
-  }
-
-  function handleDirectorySubmit(e) {
-    e.preventDefault()
-    const query = `List all ${dirCategory || "government"} government schemes available in ${
-      dirState || "India"
-    } with how to apply for each`
-    sendQuery(query, TAB_ROUTES.directory)
   }
 
   function switchTab(tab) {
@@ -239,208 +262,117 @@ export default function App() {
     setLoading(false)
   }
 
-  // Used by the category landing cards - jumps to directory tab
-  // with that category already chosen.
-  function handlePickCategory(categoryId) {
-    setDirCategory(categoryId)
+  function handlePickCategory(id) {
+    setDirectoryCategory(id)
     switchTab("directory")
   }
 
   const tabs = [
-    { id: "matcher", label: "Scheme Matcher" },
-    { id: "legal", label: "Legal Advisor" },
-    { id: "directory", label: "Scheme Directory" },
+    { id: "home",      label: "Home",      icon: "⊞" },
+    { id: "matcher",   label: "Schemes",   icon: "✦" },
+    { id: "legal",     label: "Legal",     icon: "⚖" },
+    { id: "directory", label: "Directory", icon: "☰" },
   ]
 
   return (
     <div className="app">
-      <header className="header">
-        <div className="header-inner">
-          <div className="brand">
-            <span className="brand-mark" aria-hidden="true">
-              GA
-            </span>
-            <div className="brand-text">
-              <h1 className="brand-title">Gov Awareness</h1>
-              <p className="brand-tagline">Empowering citizens with knowledge</p>
+      <div className="nav-bar">
+        <div className="nav-inner">
+          <div className="nav-brand">
+            <div className="nav-logo">GA</div>
+            <span className="nav-title">Gov Awareness</span>
+          </div>
+          <span className="nav-badge">India</span>
+        </div>
+      </div>
+
+      <main className="main-content">
+        {activeTab === "home" && (
+          <div className="home-view">
+            <div className="hero">
+              <p className="hero-eyebrow">For Every Indian Citizen</p>
+              <h1 className="hero-title">Your Government<br />Rights & Schemes</h1>
+              <p className="hero-sub">Discover schemes you qualify for, understand your legal rights, and get step-by-step guidance — all in one place.</p>
+            </div>
+
+            <div className="quick-actions">
+              <button className="quick-card quick-primary" onClick={() => switchTab("matcher")}>
+                <span className="quick-icon">✦</span>
+                <div className="quick-text">
+                  <span className="quick-label">Scheme Matcher</span>
+                  <span className="quick-desc">Find what you qualify for</span>
+                </div>
+                <span className="quick-arrow">›</span>
+              </button>
+              <button className="quick-card quick-secondary" onClick={() => switchTab("legal")}>
+                <span className="quick-icon">⚖</span>
+                <div className="quick-text">
+                  <span className="quick-label">Legal Advisor</span>
+                  <span className="quick-desc">Know your rights</span>
+                </div>
+                <span className="quick-arrow">›</span>
+              </button>
+            </div>
+
+            <div className="section">
+              <div className="section-header">
+                <span className="section-title">Browse by Category</span>
+                <button className="section-link" onClick={() => switchTab("directory")}>See all ›</button>
+              </div>
+              <div className="category-grid">
+                {LANDING_CARDS.map(c => (
+                  <button key={c.id} className="category-card"
+                    style={{ "--card-color": c.color }}
+                    onClick={() => handlePickCategory(c.id)}>
+                    <span className="cat-icon">{c.icon}</span>
+                    <span className="cat-label">{c.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="section">
+              <div className="stats-row">
+                <div className="stat-item">
+                  <span className="stat-num">7</span>
+                  <span className="stat-label">Categories</span>
+                </div>
+                <div className="stat-divider" />
+                <div className="stat-item">
+                  <span className="stat-num">25+</span>
+                  <span className="stat-label">States</span>
+                </div>
+                <div className="stat-divider" />
+                <div className="stat-item">
+                  <span className="stat-num">Live</span>
+                  <span className="stat-label">Data</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        )}
 
-      <CategoryLanding onPickCategory={handlePickCategory} />
-
-      <nav className="tabs" role="tablist" aria-label="Sections">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            className={`tab ${activeTab === tab.id ? "tab-active" : ""}`}
-            onClick={() => switchTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-
-      <main className="main">
         {activeTab === "matcher" && (
-          <section className="panel" aria-labelledby="matcher-heading">
-            <h2 id="matcher-heading" className="panel-title">
-              Find Government Schemes For You
-            </h2>
-            <p className="panel-subtitle">Tell us about yourself and we&apos;ll match you with relevant schemes.</p>
-
-            <form className="form" onSubmit={handleMatcherSubmit}>
-              <div className="field">
-                <label htmlFor="occupation">Occupation</label>
-                <select id="occupation" value={occupation} onChange={(e) => setOccupation(e.target.value)}>
-                  <option value="">Select occupation</option>
-                  {OCCUPATIONS.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="field">
-                <label htmlFor="matcher-state">State</label>
-                <select id="matcher-state" value={matcherState} onChange={(e) => setMatcherState(e.target.value)}>
-                  <option value="">Select state</option>
-                  {STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="field">
-                <label htmlFor="matcher-category">Category</label>
-                <select
-                  id="matcher-category"
-                  value={matcherCategory}
-                  onChange={(e) => setMatcherCategory(e.target.value)}
-                >
-                  <option value="">Select category</option>
-                  {MATCHER_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {occupation === "Farmer" && (
-                <div className="field">
-                  <label htmlFor="land">Land owned</label>
-                  <select id="land" value={land} onChange={(e) => setLand(e.target.value)}>
-                    <option value="">Select land owned</option>
-                    {LAND_OPTIONS.map((l) => (
-                      <option key={l} value={l}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="field field-full">
-                <label htmlFor="details">Any additional details? (optional)</label>
-                <textarea
-                  id="details"
-                  rows="3"
-                  placeholder="e.g. I have a disability, I am a widow, I run a dairy farm..."
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                />
-              </div>
-
-              <button type="submit" className="btn" disabled={loading}>
-                {loading ? "Searching..." : "Find Matching Schemes"}
-              </button>
-            </form>
-
-            <ResponseCard loading={loading} error={error} answer={answer} />
-          </section>
+          <MatcherTab loading={loading} error={error} answer={answer} onSubmit={sendQuery} />
         )}
-
         {activeTab === "legal" && (
-          <section className="panel" aria-labelledby="legal-heading">
-            <h2 id="legal-heading" className="panel-title">
-              Know Your Legal Rights
-            </h2>
-            <p className="panel-subtitle">Describe your situation and learn what rights protect you.</p>
-
-            <form className="form" onSubmit={handleLegalSubmit}>
-              <div className="field field-full">
-                <label htmlFor="situation">Describe your situation</label>
-                <textarea
-                  id="situation"
-                  rows="5"
-                  placeholder="e.g. I got stopped by a police officer while riding my bike..."
-                  value={situation}
-                  onChange={(e) => setSituation(e.target.value)}
-                  required
-                />
-              </div>
-
-              <button type="submit" className="btn" disabled={loading || !situation.trim()}>
-                {loading ? "Searching..." : "Know My Rights"}
-              </button>
-            </form>
-
-            <ResponseCard loading={loading} error={error} answer={answer} />
-          </section>
+          <LegalTab loading={loading} error={error} answer={answer} onSubmit={sendQuery} />
         )}
-
         {activeTab === "directory" && (
-          <section className="panel" aria-labelledby="directory-heading">
-            <h2 id="directory-heading" className="panel-title">
-              Browse the Scheme Directory
-            </h2>
-            <p className="panel-subtitle">Explore schemes by category and state.</p>
-
-            <form className="form" onSubmit={handleDirectorySubmit}>
-              <div className="field">
-                <label htmlFor="dir-category">Category</label>
-                <select id="dir-category" value={dirCategory} onChange={(e) => setDirCategory(e.target.value)}>
-                  <option value="">Select category</option>
-                  {DIRECTORY_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="field">
-                <label htmlFor="dir-state">State</label>
-                <select id="dir-state" value={dirState} onChange={(e) => setDirState(e.target.value)}>
-                  <option value="">Select state</option>
-                  {STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button type="submit" className="btn" disabled={loading}>
-                {loading ? "Searching..." : "Browse Schemes"}
-              </button>
-            </form>
-
-            <ResponseCard loading={loading} error={error} answer={answer} />
-          </section>
+          <DirectoryTab loading={loading} error={error} answer={answer}
+            onSubmit={sendQuery} initCategory={directoryCategory} />
         )}
       </main>
 
-      <footer className="footer">
-        <p>Data sourced from official Indian government portals</p>
-      </footer>
+      <nav className="tab-bar">
+        {tabs.map(tab => (
+          <button key={tab.id} className={`tab-item ${activeTab === tab.id ? "tab-active" : ""}`}
+            onClick={() => switchTab(tab.id)}>
+            <span className="tab-icon">{tab.icon}</span>
+            <span className="tab-label">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }
