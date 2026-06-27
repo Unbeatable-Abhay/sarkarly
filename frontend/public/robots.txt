@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://gov-awareness.replit.app/sitemap.xml
+Sitemap: https://gov-project-front.onrender.com/sitemap.xml
 
 Disallow: /static/js/*.map
