@@ -111,11 +111,11 @@ make sure to make this link clickable so and not just paste it as a text
 How to Apply:
 1. Step 1
 2. Step 2
-and so on.... and after all the "How to apply" steps make sure to add the the actual working form url for that scheme
+and so on.... and after all the "How to apply" steps make sure to add the the actual working form url for that scheme and then add the separator
 -----------------------------------------
 
 Rules:
-- Output clean plain text only.
+- Output clean plain text only, leave proper lines before and after links and other headings.
 - Never show tool calls or XML tags.
 - Do not use markdown.
 
