@@ -279,8 +279,8 @@ export default function App() {
       <div className="nav-bar">
         <div className="nav-inner">
           <div className="nav-brand">
-            <div className="nav-logo">GA</div>
-            <span className="nav-title">Gov Awareness</span>
+            <div className="nav-logo">S</div>
+            <span className="nav-title">Sarkarly</span>
           </div>
           <span className="nav-badge">India</span>
         </div>

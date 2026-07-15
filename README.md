@@ -1,4 +1,4 @@
-# Gov Awareness
+# Sarkarly
 
 A web application that helps Indian citizens discover government schemes they qualify for, understand their legal rights in real-life situations, and get step-by-step guidance on how to apply for available schemes.
 
@@ -42,7 +42,7 @@ Browse all available central and state government schemes in one place. Select a
 ## Project Structure
 
 ```
-gov_awareness/
+sarkarly/
 ├── main.py           # Flask backend with API routes
 ├── .env.example      # Environment variable template
 ├── .gitignore
