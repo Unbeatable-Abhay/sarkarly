@@ -105,9 +105,3 @@ The app uses **Groq** as the primary LLM provider. If Groq's daily token limit i
 ## Important Note
 
 All responses from this application are for informational purposes only. Users should verify information through official government portals and consult a legal professional before taking any action. Source links are provided with every response for independent verification.
-
----
-
-## Author
-
-[Abhay](https://github.com/Unbeatable-Abhay)
