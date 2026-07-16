@@ -1,12 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#007AFF"/>
-      <stop offset="100%" stop-color="#5AC8FA"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="114" fill="url(#g)"/>
-  <text x="256" y="310" font-family="-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif"
-        font-size="196" font-weight="700" fill="white"
-        text-anchor="middle" letter-spacing="4">GA</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g fill="#000000">
+    <path d="M 50 66.5
+             C 44 60 36 52 33 40
+             C 42 43 48 50 50 58
+             C 48 46 46 34 40 24
+             C 50 30 56 42 56 58
+             C 56 42 62 30 72 24
+             C 66 34 64 46 62 58
+             C 64 50 70 43 79 40
+             C 76 52 68 60 62 66.5
+             Z" />
+  </g>
 </svg>
