@@ -37,6 +37,15 @@ body {
   overscroll-behavior: none;
 }
 
+/* On wide viewports the .app shell no longer fills the window, so give the
+   space around it some presence instead of flat gray. */
+@media (min-width: 1024px) {
+  body {
+    background: linear-gradient(135deg, #E1EFFF 0%, #F2F2F7 45%, #F2F2F7 55%, #E8F2FF 100%);
+    min-height: 100vh;
+  }
+}
+
 button  { font-family: var(--font); cursor: pointer; border: none; background: none; }
 input, select, textarea { font-family: var(--font); }
 
@@ -474,6 +483,23 @@ input, select, textarea { font-family: var(--font); }
   .panel-title   { font-size: 32px; }
 
   .category-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── Wide Desktop Shell (≥ 1024px) ─────────────────────────
+   Beyond tablet width the fixed 680px column starts leaving a lot of
+   unused space on a monitor, so widen the shell itself and let the grid
+   pick up an extra column instead of just floating a narrow phone card. */
+@media (min-width: 1024px) {
+  .app, .nav-bar, .tab-bar {
+    max-width: 1040px;
+  }
+
+  .hero-sub { max-width: 480px; }
+
+  .category-grid { grid-template-columns: repeat(4, 1fr); }
+
+  .quick-actions { padding-left: 20px; padding-right: 20px; }
+  .section       { padding-left: 20px; padding-right: 20px; }
 }
 
 /* ── Reduced Motion ──────────────────────────────────────── */
