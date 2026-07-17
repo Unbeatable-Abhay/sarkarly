@@ -282,6 +282,14 @@ export default function App() {
             <div className="nav-logo">S</div>
             <span className="nav-title">Sarkarly</span>
           </div>
+          <nav className="nav-links">
+            {tabs.map(tab => (
+              <button key={tab.id} className={`nav-link ${activeTab === tab.id ? "nav-link-active" : ""}`}
+                onClick={() => switchTab(tab.id)}>
+                {tab.label}
+              </button>
+            ))}
+          </nav>
           <span className="nav-badge">India</span>
         </div>
       </div>

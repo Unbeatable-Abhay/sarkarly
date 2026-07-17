@@ -37,15 +37,6 @@ body {
   overscroll-behavior: none;
 }
 
-/* On wide viewports the .app shell no longer fills the window, so give the
-   space around it some presence instead of flat gray. */
-@media (min-width: 1024px) {
-  body {
-    background: linear-gradient(135deg, #E1EFFF 0%, #F2F2F7 45%, #F2F2F7 55%, #E8F2FF 100%);
-    min-height: 100vh;
-  }
-}
-
 button  { font-family: var(--font); cursor: pointer; border: none; background: none; }
 input, select, textarea { font-family: var(--font); }
 
@@ -54,14 +45,16 @@ input, select, textarea { font-family: var(--font); }
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  max-width: 680px;
-  margin: 0 auto;
+  width: 100%;
   position: relative;
   background: var(--bg);
 }
 
 .main-content {
   flex: 1;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   overflow-y: auto;
   padding-top: var(--nav-height);
   padding-bottom: calc(var(--tab-height) + env(safe-area-inset-bottom, 0px) + 12px);
@@ -72,10 +65,8 @@ input, select, textarea { font-family: var(--font); }
 .nav-bar {
   position: fixed;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   width: 100%;
-  max-width: 680px;
   z-index: 200;
   height: var(--nav-height);
   background: rgba(242,242,247,0.85);
@@ -86,10 +77,13 @@ input, select, textarea { font-family: var(--font); }
 
 .nav-inner {
   height: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
+  gap: 24px;
 }
 
 .nav-brand { display: flex; align-items: center; gap: 10px; }
@@ -116,14 +110,26 @@ input, select, textarea { font-family: var(--font); }
   padding: 3px 10px; border-radius: 20px;
 }
 
-/* ── Tab Bar ─────────────────────────────────────────────── */
+/* Desktop top nav — mirrors the bottom tab bar but as inline links.
+   Hidden on phone/tablet where the bottom tab bar is the primary nav. */
+.nav-links { display: none; }
+.nav-link {
+  font-size: 14px; font-weight: 500;
+  color: var(--label-2);
+  padding: 6px 4px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.18s var(--ease), border-color 0.18s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-link:hover { color: var(--label); }
+.nav-link-active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* ── Tab Bar (mobile/tablet bottom nav) ─────────────────── */
 .tab-bar {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   width: 100%;
-  max-width: 680px;
   z-index: 200;
   display: flex;
   align-items: stretch;
@@ -471,10 +477,6 @@ input, select, textarea { font-family: var(--font); }
 
 /* ── Desktop Shell (≥ 640px) ────────────────────────────── */
 @media (min-width: 640px) {
-  .app {
-    box-shadow: 0 0 0 0.5px var(--separator), var(--shadow-lg);
-  }
-
   .hero-title { font-size: 40px; }
 
   .quick-actions { flex-direction: row; }
@@ -485,13 +487,17 @@ input, select, textarea { font-family: var(--font); }
   .category-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* ── Wide Desktop Shell (≥ 1024px) ─────────────────────────
-   Beyond tablet width the fixed 680px column starts leaving a lot of
-   unused space on a monitor, so widen the shell itself and let the grid
-   pick up an extra column instead of just floating a narrow phone card. */
+/* ── Wide Desktop (≥ 1024px) ────────────────────────────────
+   A bottom tab bar is a mobile-app convention. At desktop width we swap
+   it for a normal inline top nav (like a website header) instead of
+   floating a phone-style tab bar in a huge window. Content also gets
+   more breathing room since there's no bottom bar to clear anymore. */
 @media (min-width: 1024px) {
-  .app, .nav-bar, .tab-bar {
-    max-width: 1040px;
+  .nav-links { display: flex; align-items: center; gap: 28px; }
+  .tab-bar   { display: none; }
+
+  .main-content {
+    padding-bottom: 40px;
   }
 
   .hero-sub { max-width: 480px; }
