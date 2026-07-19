@@ -37,23 +37,14 @@ const LANDING_CARDS = [
 
 const DISCLAIMER = "For awareness only. Verify through official government portals before applying."
 
-function formatAnswer(text) {
-  if (!text) return { html: "", links: [] }
-  const urlRegex = /(https?:\/\/[^\s)\]]+)/g
-  const links = []
-  const seen = {}
-  let match
-  while ((match = urlRegex.exec(text)) !== null) {
-    let url = match[1].replace(/[.,;]+$/, "")
-    if (!seen[url]) { seen[url] = true; links.push(url) }
+function LinkChip({ url, label }) {
+  let host = label
+  if (!host) {
+    try { host = new URL(url).hostname.replace("www.", "") } catch { host = "Source" }
   }
-  let html = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\n/g, "<br>")
-  return { html, links }
+  return (
+    <a className="chip" href={url} target="_blank" rel="noopener noreferrer">{host}</a>
+  )
 }
 
 function Spinner() {
@@ -65,7 +56,7 @@ function Spinner() {
   )
 }
 
-function ResponseCard({ loading, error, answer }) {
+function ResponseCard({ loading, error, result, type }) {
   if (loading) return <Spinner />
   if (error) {
     return (
@@ -75,28 +66,141 @@ function ResponseCard({ loading, error, answer }) {
       </div>
     )
   }
-  if (!answer) return null
-  const { html, links } = formatAnswer(answer)
+  if (!result) return null
+  if (type === "legal") return <LegalResultCard result={result} />
+  return <SchemeResultCard result={result} />
+}
+
+function SchemeResultCard({ result }) {
+  const schemes = result.schemes || []
+
+  if (schemes.length === 0) {
+    return (
+      <div className="result-card">
+        <div className="result-body">No matching schemes found. Try adjusting your details.</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="result-list">
+      {schemes.map((s, i) => (
+        <div className="result-card" key={i}>
+          <div className="result-header">
+            <span className="result-dot" />
+            <span className="result-title">{s.scheme_name}</span>
+          </div>
+
+          {(s.category || s.ministry) && (
+            <div className="scheme-meta">
+              {s.category && <span className="meta-tag">{s.category}</span>}
+              {s.ministry && <span className="meta-tag meta-tag-muted">{s.ministry}</span>}
+            </div>
+          )}
+
+          {s.description && <div className="result-body">{s.description}</div>}
+
+          {s.eligibility?.length > 0 && (
+            <div className="result-section">
+              <p className="result-section-label">Who Can Apply</p>
+              <ul className="result-ul">
+                {s.eligibility.map((e, j) => <li key={j}>{e}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {s.benefits?.length > 0 && (
+            <div className="result-section">
+              <p className="result-section-label">Benefits</p>
+              <ul className="result-ul">
+                {s.benefits.map((b, j) => <li key={j}>{b}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {s.how_to_apply?.steps?.length > 0 && (
+            <div className="result-section">
+              <p className="result-section-label">
+                How to Apply{s.how_to_apply.mode ? ` (${s.how_to_apply.mode})` : ""}
+              </p>
+              <ol className="result-ol">
+                {s.how_to_apply.steps.map((step, j) => <li key={j}>{step}</li>)}
+              </ol>
+            </div>
+          )}
+
+          {s.documents_required?.length > 0 && (
+            <div className="result-section">
+              <p className="result-section-label">Documents Required</p>
+              <ul className="result-ul">
+                {s.documents_required.map((d, j) => <li key={j}>{d}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {(s.official_link || s.application_link) && (
+            <div className="result-links">
+              <p className="result-links-label">Links</p>
+              <div className="chips">
+                {s.official_link && <LinkChip url={s.official_link} label="Official Portal" />}
+                {s.application_link && <LinkChip url={s.application_link} label="Apply Now" />}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      <p className="disclaimer">{result.disclaimer || DISCLAIMER}</p>
+    </div>
+  )
+}
+
+function LegalResultCard({ result }) {
   return (
     <div className="result-card">
       <div className="result-header">
         <span className="result-dot" />
-        <span className="result-title">Result</span>
+        <span className="result-title">{result.topic || "Result"}</span>
       </div>
-      <div className="result-body" dangerouslySetInnerHTML={{ __html: html }} />
-      {links.length > 0 && (
+
+      {result.explanation && <div className="result-body">{result.explanation}</div>}
+
+      {result.citizen_rights?.length > 0 && (
+        <div className="result-section">
+          <p className="result-section-label">Your Rights</p>
+          <ul className="result-ul">
+            {result.citizen_rights.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {result.authority_limits?.length > 0 && (
+        <div className="result-section">
+          <p className="result-section-label">Limits on Authority</p>
+          <ul className="result-ul">
+            {result.authority_limits.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {result.relevant_provisions?.length > 0 && (
+        <div className="result-section">
+          <p className="result-section-label">Relevant Legal Provisions</p>
+          <ul className="result-ul">
+            {result.relevant_provisions.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {result.sources?.length > 0 && (
         <div className="result-links">
           <p className="result-links-label">Sources</p>
           <div className="chips">
-            {links.map((url, i) => (
-              <a key={i} className="chip" href={url} target="_blank" rel="noopener noreferrer">
-                {(() => { try { return new URL(url).hostname.replace("www.", "") } catch { return "Source" } })()}
-              </a>
-            ))}
+            {result.sources.map((url, i) => <LinkChip url={url} key={i} />)}
           </div>
         </div>
       )}
-      <p className="disclaimer">{DISCLAIMER}</p>
+
+      <p className="disclaimer">{result.disclaimer || DISCLAIMER}</p>
     </div>
   )
 }
@@ -116,7 +220,7 @@ function SelectField({ id, label, value, onChange, options, placeholder }) {
   )
 }
 
-function MatcherTab({ loading, error, answer, onSubmit }) {
+function MatcherTab({ loading, error, result, onSubmit }) {
   const [occupation, setOccupation] = useState("")
   const [state, setState] = useState("")
   const [category, setCategory] = useState("")
@@ -159,12 +263,12 @@ function MatcherTab({ loading, error, answer, onSubmit }) {
           {loading ? "Searching…" : "Find Matching Schemes"}
         </button>
       </form>
-      <ResponseCard loading={loading} error={error} answer={answer} />
+      <ResponseCard loading={loading} error={error} result={result} type="scheme" />
     </div>
   )
 }
 
-function LegalTab({ loading, error, answer, onSubmit }) {
+function LegalTab({ loading, error, result, onSubmit }) {
   const [situation, setSituation] = useState("")
 
   function handleSubmit(e) {
@@ -191,12 +295,12 @@ function LegalTab({ loading, error, answer, onSubmit }) {
           {loading ? "Searching…" : "Know My Rights"}
         </button>
       </form>
-      <ResponseCard loading={loading} error={error} answer={answer} />
+      <ResponseCard loading={loading} error={error} result={result} type="legal" />
     </div>
   )
 }
 
-function DirectoryTab({ loading, error, answer, onSubmit, initCategory }) {
+function DirectoryTab({ loading, error, result, onSubmit, initCategory }) {
   const [category, setCategory] = useState(initCategory || "")
   const [state, setState] = useState("")
 
@@ -223,7 +327,7 @@ function DirectoryTab({ loading, error, answer, onSubmit, initCategory }) {
           {loading ? "Searching…" : "Browse Schemes"}
         </button>
       </form>
-      <ResponseCard loading={loading} error={error} answer={answer} />
+      <ResponseCard loading={loading} error={error} result={result} type="scheme" />
     </div>
   )
 }
@@ -233,21 +337,21 @@ export default function App() {
   const [directoryCategory, setDirectoryCategory] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
-  const [answer, setAnswer] = useState("")
+  const [result, setResult] = useState(null)
 
   async function sendQuery(query, url) {
     setLoading(true)
     setError(false)
-    setAnswer("")
+    setResult(null)
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
       })
-      if (!res.ok) throw new Error("Request failed")
       const data = await res.json()
-      setAnswer(data.Answer || "")
+      if (!res.ok || data.error) throw new Error(data.error || "Request failed")
+      setResult(data)
     } catch (err) {
       setError(true)
     } finally {
@@ -257,7 +361,7 @@ export default function App() {
 
   function switchTab(tab) {
     setActiveTab(tab)
-    setAnswer("")
+    setResult(null)
     setError(false)
     setLoading(false)
   }
@@ -361,13 +465,13 @@ export default function App() {
         )}
 
         {activeTab === "matcher" && (
-          <MatcherTab loading={loading} error={error} answer={answer} onSubmit={sendQuery} />
+          <MatcherTab loading={loading} error={error} result={result} onSubmit={sendQuery} />
         )}
         {activeTab === "legal" && (
-          <LegalTab loading={loading} error={error} answer={answer} onSubmit={sendQuery} />
+          <LegalTab loading={loading} error={error} result={result} onSubmit={sendQuery} />
         )}
         {activeTab === "directory" && (
-          <DirectoryTab loading={loading} error={error} answer={answer}
+          <DirectoryTab loading={loading} error={error} result={result}
             onSubmit={sendQuery} initCategory={directoryCategory} />
         )}
       </main>

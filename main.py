@@ -1,12 +1,54 @@
 import os
+from typing import List, Optional
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+
+class HowToApply(BaseModel):
+    mode: str = Field(description="One of: online, offline, both")
+    steps: List[str] = Field(description="Ordered, concrete steps to apply for the scheme")
+
+
+class SchemeItem(BaseModel):
+    scheme_name: str
+    description: str = Field(description="2-4 sentence plain-language summary of the scheme")
+    category: str = Field(description="e.g. Housing, Education, Health, Agriculture, Employment")
+    ministry: str = Field(description="Government ministry/department running the scheme")
+    eligibility: List[str]
+    benefits: List[str]
+    how_to_apply: HowToApply
+    documents_required: List[str]
+    official_link: str = Field(description="Official government portal URL for this scheme")
+    application_link: Optional[str] = Field(default="",
+                                            description="Direct application/form URL if different from official_link")
+
+
+class SchemeResponse(BaseModel):
+    schemes: List[SchemeItem] = Field(description="One entry per relevant scheme found")
+    disclaimer: str = Field(
+        default="This information is for awareness purposes only. Please verify through official government portals before applying."
+    )
+
+
+class LegalResponse(BaseModel):
+    topic: str = Field(description="Short label for what the query is about")
+    explanation: str = Field(description="Plain-language explanation of the citizen's rights/situation")
+    relevant_provisions: List[str] = Field(default_factory=list, description="Relevant acts/sections/laws if available")
+    citizen_rights: List[str] = Field(description="Concrete rights the citizen has in this situation")
+    authority_limits: List[str] = Field(default_factory=list,
+                                        description="Limits on police/government authority relevant to the query")
+    sources: List[str] = Field(default_factory=list, description="Official/legal source links used")
+    disclaimer: str = Field(
+        default="This information is for awareness purposes only. This is not legal advice. Please consult a qualified lawyer before taking legal action."
+    )
 
 
 def get_llms():
@@ -61,15 +103,12 @@ You are an Indian government schemes assistant.
 
 Rules:
 - Search official government websites only.
-- Explain schemes clearly.
-- Mention eligibility, benefits, and official links.
-- Give concise but complete responses.
-- Output clean plain text only.
-- Never show tool calls or XML tags.
-
-Disclaimer:
-This information is for awareness purposes only.
-Please verify through official government portals before applying.
+- Find the scheme(s) that best match the user's query.
+- Fill in every field accurately based on what you find. Do not guess links —
+  only include a URL if you found it via search.
+- Mention eligibility and benefits clearly and concisely.
+- If you cannot find a working application link separate from the official
+  portal, leave application_link empty rather than inventing one.
 """
 
 legal_system_prompt = """
@@ -77,51 +116,23 @@ You are an Indian legal awareness assistant.
 
 Rules:
 - Search official/legal sources only.
-- Explain citizen rights clearly.
-- Explain police/government authority limits.
-- Mention legal provisions if available.
-- Output clean plain text only.
-- Never show tool calls or XML tags.
-
-Disclaimer:
-This information is for awareness purposes only.
-This is not legal advice.
-Please consult a qualified lawyer before taking legal action.
+- Explain citizen rights clearly and concretely.
+- Explain police/government authority limits where relevant to the query.
+- Mention specific legal provisions (acts/sections) only if you actually found them.
+- Never give this as legal advice — awareness and information only.
 """
 
 directory_system_prompt = """
 You are an Indian government scheme directory assistant.
 
-Format EXACTLY like this:
-
-SCHEME NAME: [Name]
------------------------------------------
-Description: [Info]
-
-Who Can Apply:
-[Eligibility]
-
-Benefits:
-[Benefits]
-
-Official Portal:
-[URL]
-make sure to make this link clickable so and not just paste it as a text
-
-How to Apply:
-1. Step 1
-2. Step 2
-and so on.... and after all the "How to apply" steps make sure to add the the actual working form url for that scheme and then add the separator
------------------------------------------
-
 Rules:
-- Output clean plain text only, leave proper lines before and after links and other headings.
-- Never show tool calls or XML tags.
-- Do not use markdown.
-
-Disclaimer:
-This information is for awareness purposes only.
-Please verify through official government portals before applying.
+- Search official government websites only.
+- Return multiple relevant schemes (not just one) that match the user's
+  category or query, as a directory listing.
+- Fill in every field accurately based on what you find. Do not guess links —
+  only include a URL if you found it via search.
+- If you cannot find a working application link separate from the official
+  portal, leave application_link empty rather than inventing one.
 """
 
 
@@ -131,62 +142,46 @@ def make_agents(llm, tools):
     agent_scheme = create_agent(
         llm,
         tools=tools,
-        system_prompt=scheme_system_prompt
+        system_prompt=scheme_system_prompt,
+        response_format=SchemeResponse
     )
 
     agent_legal = create_agent(
         llm,
         tools=tools,
-        system_prompt=legal_system_prompt
+        system_prompt=legal_system_prompt,
+        response_format=LegalResponse
     )
 
     agent_directory = create_agent(
         llm,
         tools=tools,
-        system_prompt=directory_system_prompt
+        system_prompt=directory_system_prompt,
+        response_format=SchemeResponse
     )
 
     return agent_scheme, agent_legal, agent_directory
 
 
-def extract_final_answer(response):
-    messages = response.get("messages", [])
+def extract_structured_response(response):
+    """
+    Pulls the validated Pydantic object LangChain builds when response_format
+    is set, and converts it to a plain dict ready for jsonify().
+    Returns None if structuring didn't happen (e.g. model doesn't support it),
+    so the caller can fall back to the next model.
+    """
+    structured = response.get("structured_response")
 
-    for msg in reversed(messages):
+    if structured is None:
+        return None
 
-        if getattr(msg, "type", "") == "ai":
+    if hasattr(structured, "model_dump"):
+        return structured.model_dump()
 
-            content = msg.content
+    if isinstance(structured, dict):
+        return structured
 
-            if isinstance(content, str):
-
-                if "<web_search>" in content:
-                    continue
-
-                return content
-
-            elif isinstance(content, list):
-
-                texts = []
-
-                for item in content:
-
-                    if isinstance(item, dict):
-
-                        if item.get("type") == "text":
-                            texts.append(item.get("text", ""))
-
-                        elif "text" in item:
-                            texts.append(item["text"])
-
-                final_text = "\n".join(texts)
-
-                if "<web_search>" in final_text:
-                    continue
-
-                return final_text
-
-    return "Unable to generate a proper response."
+    return None
 
 
 def handle_request(agent_type, user_query):
@@ -235,11 +230,13 @@ def handle_request(agent_type, user_query):
             print(response)
             print("==================================\n")
 
-            answer = extract_final_answer(response)
+            data = extract_structured_response(response)
 
-            return jsonify({
-                "Answer": answer
-            })
+            if data is None:
+                print("No structured_response present, trying fallback model...")
+                continue
+
+            return jsonify(data)
 
         except Exception as e:
 
