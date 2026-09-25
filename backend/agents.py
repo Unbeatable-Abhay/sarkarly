@@ -100,7 +100,7 @@ def _run_live_agent(agent_type: str, user_query: str, exclude_names: list = None
 
     if not llms:
         return (
-            {"error": "No AI models configured. Please set MISTRAL_API_KEY or GEMINI_API_KEY."},
+            {"error": "No AI models configured. Please set DEEPSEEK_API_KEY or GEMINI_API_KEYs."},
             503,
         )
 

@@ -34,6 +34,23 @@ function SchemeCard({ scheme, onClick, variant = "list" }) {
     );
   }
 
+  if (variant === "wide") {
+    return (
+      <button className="scheme-card scheme-card--wide" onClick={onClick}>
+        <span className="scheme-card__icon-wrap scheme-card__icon-wrap--wide">
+          <Icon size={17} color="var(--color-marigold)" />
+        </span>
+        <span className="scheme-card__wide-body">
+          <span className="scheme-card__name">{scheme.scheme_name}</span>
+          <span className="scheme-card__meta">{scheme.category}</span>
+          {scheme.financial_benefits && (
+            <span className="scheme-card__benefit">{scheme.financial_benefits}</span>
+          )}
+        </span>
+      </button>
+    );
+  }
+
   if (variant === "compact") {
     return (
       <button className="scheme-card scheme-card--grid" onClick={onClick}>
@@ -41,7 +58,10 @@ function SchemeCard({ scheme, onClick, variant = "list" }) {
           <Icon size={13} color="var(--color-ink)" />
         </span>
         <span className="scheme-card__name">{scheme.scheme_name}</span>
-        <span className="scheme-card__meta">{scheme.category}</span>
+        <span className="scheme-card__meta">{scheme.category} · {scheme.ministry}</span>
+        {scheme.financial_benefits && (
+          <span className="scheme-card__benefit">{scheme.financial_benefits}</span>
+        )}
       </button>
     );
   }

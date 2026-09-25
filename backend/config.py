@@ -32,16 +32,21 @@ class Config:
     MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
     TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
     SUPABASE_URL = os.getenv("SUPABASE_URL")
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 
     GEMINI_RPM = int(os.getenv("GEMINI_RPM", "5"))
     GEMINI_RPD = int(os.getenv("GEMINI_RPD", "18"))
+    GEMINI_31_RPM = int(os.getenv("GEMINI_31_RPM", "0"))
+    GEMINI_31_RPD = int(os.getenv("GEMINI_31_RPD", "0"))
     MISTRAL_RPM = int(os.getenv("MISTRAL_RPM", "0"))
     MISTRAL_RPD = int(os.getenv("MISTRAL_RPD", "0"))
     MISTRAL_SMALL_RPM = int(os.getenv("MISTRAL_SMALL_RPM", "0"))
     MISTRAL_SMALL_RPD = int(os.getenv("MISTRAL_SMALL_RPD", "0"))
+    DEEPSEEK_RPM = int(os.getenv("DEEPSEEK_RPM", "0"))
+    DEEPSEEK_RPD = int(os.getenv("DEEPSEEK_RPD", "0"))
 
     # --- Per-user / per-IP daily request limits (Flask-Limiter) ---
     # Strings in Flask-Limiter's own format, e.g. "80 per day".
@@ -52,4 +57,4 @@ class Config:
 
     @classmethod
     def has_any_llm_key(cls) -> bool:
-        return bool(cls.MISTRAL_API_KEY or cls.GEMINI_API_KEY)
+        return bool(cls.MISTRAL_API_KEY or cls.GEMINI_API_KEY or cls.DEEPSEEK_API_KEY)
