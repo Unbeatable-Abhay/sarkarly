@@ -1,3 +1,6 @@
+## License
+This project is licensed under the [Apache License 2.0](LICENSE).
+
 # Sarkarly
 
 A web application that helps Indian citizens discover government schemes they qualify for, understand their legal rights in real-life situations, and get step-by-step guidance on how to apply for available schemes.
